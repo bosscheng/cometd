@@ -16,7 +16,7 @@
 
 /* CometD Version ${project.version} */
 
-(function(root, factory) {
+(function (root, factory) {
     if (typeof exports === 'object') {
         // CommonJS.
         module.exports = factory();
@@ -28,28 +28,35 @@
         root.org = root.org || {};
         root.org.cometd = factory();
     }
-}(this, function() {
+}(this, function () {
     /**
      * Browsers may throttle the Window scheduler,
      * so we may replace it with a Worker scheduler.
+     * scheduler 调度器
      */
-    var Scheduler = function() {
-        var _ids = 0;
-        var _tasks = {};
-        this.register = function(funktion) {
+    var Scheduler = function () {
+        // 
+        var _ids = 0; // id
+        var _tasks = {}; // task 
+        //  注册 scheduler 
+        this.register = function (funktion) {
             var id = ++_ids;
             _tasks[id] = funktion;
             return id;
         };
-        this.unregister = function(id) {
+
+        //  
+        this.unregister = function (id) {
             var funktion = _tasks[id];
             delete _tasks[id];
             return funktion;
         };
-        this.setTimeout = function(funktion, delay) {
+        // 
+        this.setTimeout = function (funktion, delay) {
             return window.setTimeout(funktion, delay);
         };
-        this.clearTimeout = function(id) {
+        //  
+        this.clearTimeout = function (id) {
             window.clearTimeout(id);
         };
     };
@@ -59,12 +66,15 @@
      */
     function WorkerScheduler() {
         var _tasks = {};
-        self.onmessage = function(e) {
+        //  slef ? 
+        self.onmessage = function (e) {
+            //  
             var cmd = e.data;
+            //  
             var id = _tasks[cmd.id];
             switch (cmd.type) {
                 case 'setTimeout':
-                    _tasks[cmd.id] = self.setTimeout(function() {
+                    _tasks[cmd.id] = self.setTimeout(function () {
                         delete _tasks[cmd.id];
                         self.postMessage({
                             id: cmd.id
@@ -88,13 +98,13 @@
      * Utility functions.
      */
     var Utils = {
-        isString: function(value) {
+        isString: function (value) {
             if (value === undefined || value === null) {
                 return false;
             }
             return typeof value === 'string' || value instanceof String;
         },
-        isArray: function(value) {
+        isArray: function (value) {
             if (value === undefined || value === null) {
                 return false;
             }
@@ -106,7 +116,7 @@
          * @param array the array to check for the element presence
          * @return the index of the element, if present, or a negative index if the element is not present
          */
-        inArray: function(element, array) {
+        inArray: function (element, array) {
             for (var i = 0; i < array.length; ++i) {
                 if (element === array[i]) {
                     return i;
@@ -119,16 +129,20 @@
 
     /**
      * A registry for transports used by the CometD object.
+     * 传输 注册表
      */
-    var TransportRegistry = function() {
+    var TransportRegistry = function () {
+        // 
         var _types = [];
         var _transports = {};
 
-        this.getTransportTypes = function() {
+        //  get transport type 
+        this.getTransportTypes = function () {
             return _types.slice(0);
         };
 
-        this.findTransportTypes = function(version, crossDomain, url) {
+        //  find transport type
+        this.findTransportTypes = function (version, crossDomain, url) {
             var result = [];
             for (var i = 0; i < _types.length; ++i) {
                 var type = _types[i];
@@ -139,7 +153,8 @@
             return result;
         };
 
-        this.negotiateTransport = function(types, version, crossDomain, url) {
+        //  negotiate transport
+        this.negotiateTransport = function (types, version, crossDomain, url) {
             for (var i = 0; i < _types.length; ++i) {
                 var type = _types[i];
                 for (var j = 0; j < types.length; ++j) {
@@ -154,7 +169,8 @@
             return null;
         };
 
-        this.add = function(type, transport, index) {
+        //  
+        this.add = function (type, transport, index) {
             var existing = false;
             for (var i = 0; i < _types.length; ++i) {
                 if (_types[i] === type) {
@@ -175,7 +191,7 @@
             return !existing;
         };
 
-        this.find = function(type) {
+        this.find = function (type) {
             for (var i = 0; i < _types.length; ++i) {
                 if (_types[i] === type) {
                     return _transports[type];
@@ -184,7 +200,7 @@
             return null;
         };
 
-        this.remove = function(type) {
+        this.remove = function (type) {
             for (var i = 0; i < _types.length; ++i) {
                 if (_types[i] === type) {
                     _types.splice(i, 1);
@@ -196,12 +212,12 @@
             return null;
         };
 
-        this.clear = function() {
+        this.clear = function () {
             _types = [];
             _transports = {};
         };
 
-        this.reset = function(init) {
+        this.reset = function (init) {
             for (var i = 0; i < _types.length; ++i) {
                 _transports[_types[i]].reset(init);
             }
@@ -211,11 +227,12 @@
 
     /**
      * Base object with the common functionality for transports.
+     * 传输
      */
-    var Transport = function() {
-        var _type;
-        var _cometd;
-        var _url;
+    var Transport = function () {
+        var _type; // type
+        var _cometd; // cometd
+        var _url; // url 
 
         /**
          * Function invoked just after a transport has been successfully registered.
@@ -223,7 +240,7 @@
          * @param cometd the cometd object this transport has been registered to
          * @see #unregistered()
          */
-        this.registered = function(type, cometd) {
+        this.registered = function (type, cometd) {
             _type = type;
             _cometd = cometd;
         };
@@ -232,32 +249,32 @@
          * Function invoked just after a transport has been successfully unregistered.
          * @see #registered(type, cometd)
          */
-        this.unregistered = function() {
+        this.unregistered = function () {
             _type = null;
             _cometd = null;
         };
 
-        this._debug = function() {
+        this._debug = function () {
             _cometd._debug.apply(_cometd, arguments);
         };
 
-        this._mixin = function() {
+        this._mixin = function () {
             return _cometd._mixin.apply(_cometd, arguments);
         };
 
-        this.getConfiguration = function() {
+        this.getConfiguration = function () {
             return _cometd.getConfiguration();
         };
 
-        this.getAdvice = function() {
+        this.getAdvice = function () {
             return _cometd.getAdvice();
         };
 
-        this.setTimeout = function(funktion, delay) {
+        this.setTimeout = function (funktion, delay) {
             return _cometd.setTimeout(funktion, delay);
         };
 
-        this.clearTimeout = function(id) {
+        this.clearTimeout = function (id) {
             _cometd.clearTimeout(id);
         };
 
@@ -266,7 +283,8 @@
          * @param response the response to convert
          * @return an array of bayeux messages obtained by converting the response
          */
-        this.convertToMessages = function(response) {
+        //  convert to messges 
+        this.convertToMessages = function (response) {
             if (Utils.isString(response)) {
                 try {
                     return JSON.parse(response);
@@ -295,7 +313,7 @@
          * @return true if this transport can work for the given version and cross domain communication case,
          * false otherwise
          */
-        this.accept = function(version, crossDomain, url) {
+        this.accept = function (version, crossDomain, url) {
             throw 'Abstract';
         };
 
@@ -303,36 +321,37 @@
          * Returns the type of this transport.
          * @see #registered(type, cometd)
          */
-        this.getType = function() {
+        this.getType = function () {
             return _type;
         };
 
-        this.getURL = function() {
+        this.getURL = function () {
             return _url;
         };
 
-        this.setURL = function(url) {
+        this.setURL = function (url) {
             _url = url;
         };
 
-        this.send = function(envelope, metaConnect) {
+        this.send = function (envelope, metaConnect) {
             throw 'Abstract';
         };
 
-        this.reset = function(init) {
+        this.reset = function (init) {
             this._debug('Transport', _type, 'reset', init ? 'initial' : 'retry');
         };
 
-        this.abort = function() {
+        this.abort = function () {
             this._debug('Transport', _type, 'aborted');
         };
 
-        this.toString = function() {
+        this.toString = function () {
             return this.getType();
         };
     };
 
-    Transport.derive = function(baseObject) {
+    //  derive 
+    Transport.derive = function (baseObject) {
         function F() {
         }
 
@@ -348,15 +367,23 @@
      * To achieve this, we have one reserved request for the long poll, and all other
      * requests are serialized one after the other.
      */
-    var RequestTransport = function() {
+    var RequestTransport = function () {
+        // 
         var _super = new Transport();
+        // clone 一个新的对象出来。
         var _self = Transport.derive(_super);
+        // request ID
         var _requestIds = 0;
+        //   meta connect request
         var _metaConnectRequest = null;
+        //  请求
         var _requests = [];
+        //  信封
         var _envelopes = [];
 
+        // 合并 envelopes 信封
         function _coalesceEnvelopes(envelope) {
+            //  
             while (_envelopes.length > 0) {
                 var envelopeAndRequest = _envelopes[0];
                 var newEnvelope = envelopeAndRequest[0];
@@ -364,6 +391,7 @@
                 if (newEnvelope.url === envelope.url &&
                     newEnvelope.sync === envelope.sync) {
                     _envelopes.shift();
+                    //  messages 
                     envelope.messages = envelope.messages.concat(newEnvelope.messages);
                     this._debug('Coalesced', newEnvelope.messages.length, 'messages from request', newRequest.id);
                     continue;
@@ -372,10 +400,13 @@
             }
         }
 
+        //  transport send
         function _transportSend(envelope, request) {
+            //  
             this.transportSend(envelope, request);
+            // 
             request.expired = false;
-
+            //  
             if (!envelope.sync) {
                 var maxDelay = this.getConfiguration().maxNetworkDelay;
                 var delay = maxDelay;
@@ -386,7 +417,7 @@
                 this._debug('Transport', this.getType(), 'waiting at most', delay, 'ms for the response, maxNetworkDelay', maxDelay);
 
                 var self = this;
-                request.timeout = this.setTimeout(function() {
+                request.timeout = this.setTimeout(function () {
                     request.expired = true;
                     var errorMessage = 'Request ' + request.id + ' of transport ' + self.getType() + ' exceeded ' + delay + ' ms max network delay';
                     var failure = {
@@ -450,7 +481,7 @@
                 } else {
                     // Keep the semantic of calling response callbacks asynchronously after the request
                     var self = this;
-                    this.setTimeout(function() {
+                    this.setTimeout(function () {
                         self.complete(nextRequest, false, nextRequest.metaConnect);
                         var failure = {
                             reason: 'Previous request failed'
@@ -463,7 +494,7 @@
             }
         }
 
-        _self.complete = function(request, success, metaConnect) {
+        _self.complete = function (request, success, metaConnect) {
             if (metaConnect) {
                 _metaConnectComplete.call(this, request);
             } else {
@@ -476,11 +507,11 @@
          * @param envelope the envelope to send
          * @param request the request information
          */
-        _self.transportSend = function(envelope, request) {
+        _self.transportSend = function (envelope, request) {
             throw 'Abstract';
         };
 
-        _self.transportSuccess = function(envelope, request, responses) {
+        _self.transportSuccess = function (envelope, request, responses) {
             if (!request.expired) {
                 this.clearTimeout(request.timeout);
                 this.complete(request, true, request.metaConnect);
@@ -494,7 +525,7 @@
             }
         };
 
-        _self.transportFailure = function(envelope, request, failure) {
+        _self.transportFailure = function (envelope, request, failure) {
             if (!request.expired) {
                 this.clearTimeout(request.timeout);
                 this.complete(request, false, request.metaConnect);
@@ -518,7 +549,7 @@
             _metaConnectRequest = request;
         }
 
-        _self.send = function(envelope, metaConnect) {
+        _self.send = function (envelope, metaConnect) {
             if (metaConnect) {
                 _metaConnectSend.call(this, envelope);
             } else {
@@ -526,7 +557,7 @@
             }
         };
 
-        _self.abort = function() {
+        _self.abort = function () {
             _super.abort();
             for (var i = 0; i < _requests.length; ++i) {
                 var request = _requests[i];
@@ -547,14 +578,14 @@
             this.reset(true);
         };
 
-        _self.reset = function(init) {
+        _self.reset = function (init) {
             _super.reset(init);
             _metaConnectRequest = null;
             _requests = [];
             _envelopes = [];
         };
 
-        _self.abortXHR = function(xhr) {
+        _self.abortXHR = function (xhr) {
             if (xhr) {
                 try {
                     var state = xhr.readyState;
@@ -567,7 +598,7 @@
             return false;
         };
 
-        _self.xhrStatus = function(xhr) {
+        _self.xhrStatus = function (xhr) {
             if (xhr) {
                 try {
                     return xhr.status;
@@ -582,27 +613,33 @@
     };
 
 
-    var LongPollingTransport = function() {
+    //  long polling
+    var LongPollingTransport = function () {
         var _super = new RequestTransport();
         var _self = Transport.derive(_super);
         // By default, support cross domain
         var _supportsCrossDomain = true;
 
-        _self.accept = function(version, crossDomain, url) {
+        _self.accept = function (version, crossDomain, url) {
             return _supportsCrossDomain || !crossDomain;
         };
 
-        _self.newXMLHttpRequest = function() {
+        _self.newXMLHttpRequest = function () {
             return new window.XMLHttpRequest();
         };
 
-        _self.xhrSend = function(packet) {
+        // xhr send
+        _self.xhrSend = function (packet) {
             var xhr = _self.newXMLHttpRequest();
             // Copy external context, to be used in other environments.
             xhr.context = _self.context;
+            //
             xhr.withCredentials = true;
+            //
             xhr.open('POST', packet.url, packet.sync !== true);
+            //
             var headers = packet.headers;
+            //
             if (headers) {
                 for (var headerName in headers) {
                     if (headers.hasOwnProperty(headerName)) {
@@ -610,22 +647,26 @@
                     }
                 }
             }
+            //
             xhr.setRequestHeader('Content-Type', 'application/json;charset=UTF-8');
-            xhr.onload = function() {
+            //
+            xhr.onload = function () {
                 if (xhr.status === 200) {
                     packet.onSuccess(xhr.responseText);
                 } else {
                     packet.onError(xhr.statusText);
                 }
             };
-            xhr.onerror = function() {
+            //
+            xhr.onerror = function () {
                 packet.onError(xhr.statusText);
             };
+            //
             xhr.send(packet.body);
             return xhr;
         };
 
-        _self.transportSend = function(envelope, request) {
+        _self.transportSend = function (envelope, request) {
             this._debug('Transport', this.getType(), 'sending request', request.id, 'envelope', envelope);
 
             var self = this;
@@ -637,7 +678,7 @@
                     sync: envelope.sync,
                     headers: this.getConfiguration().requestHeaders,
                     body: JSON.stringify(envelope.messages),
-                    onSuccess: function(response) {
+                    onSuccess: function (response) {
                         self._debug('Transport', self.getType(), 'received response', response);
                         var success = false;
                         try {
@@ -663,7 +704,7 @@
                             }
                         }
                     },
-                    onError: function(reason, exception) {
+                    onError: function (reason, exception) {
                         self._debug('Transport', self.getType(), 'received error', reason, exception);
                         _supportsCrossDomain = false;
                         var failure = {
@@ -673,7 +714,7 @@
                         failure.httpCode = self.xhrStatus(request.xhr);
                         if (sameStack) {
                             // Keep the semantic of calling response callbacks asynchronously after the request
-                            self.setTimeout(function() {
+                            self.setTimeout(function () {
                                 self.transportFailure(envelope, request, failure);
                             }, 0);
                         } else {
@@ -685,7 +726,7 @@
             } catch (x) {
                 _supportsCrossDomain = false;
                 // Keep the semantic of calling response callbacks asynchronously after the request
-                this.setTimeout(function() {
+                this.setTimeout(function () {
                     self.transportFailure(envelope, request, {
                         exception: x
                     });
@@ -693,7 +734,7 @@
             }
         };
 
-        _self.reset = function(init) {
+        _self.reset = function (init) {
             _super.reset(init);
             _supportsCrossDomain = true;
         };
@@ -701,22 +742,23 @@
         return _self;
     };
 
-
-    var CallbackPollingTransport = function() {
+    //  callback polling
+    var CallbackPollingTransport = function () {
         var _super = new RequestTransport();
         var _self = Transport.derive(_super);
         var jsonp = 0;
 
-        _self.accept = function(version, crossDomain, url) {
+        _self.accept = function (version, crossDomain, url) {
             return true;
         };
 
-        _self.jsonpSend = function(packet) {
+        // jsonp send
+        _self.jsonpSend = function (packet) {
             var head = document.getElementsByTagName('head')[0];
             var script = document.createElement('script');
 
             var callbackName = '_cometd_jsonp_' + jsonp++;
-            window[callbackName] = function(responseText) {
+            window[callbackName] = function (responseText) {
                 head.removeChild(script);
                 delete window[callbackName];
                 packet.onSuccess(responseText);
@@ -729,7 +771,7 @@
             script.src = url;
             script.async = packet.sync !== true;
             script.type = 'application/javascript';
-            script.onerror = function(e) {
+            script.onerror = function (e) {
                 packet.onError('jsonp ' + e.type);
             };
             head.appendChild(script);
@@ -737,12 +779,12 @@
 
         function _failTransportFn(envelope, request, x) {
             var self = this;
-            return function() {
+            return function () {
                 self.transportFailure(envelope, request, 'error', x);
             };
         }
 
-        _self.transportSend = function(envelope, request) {
+        _self.transportSend = function (envelope, request) {
             var self = this;
 
             // Microsoft Internet Explorer has a 2083 URL max length
@@ -808,7 +850,7 @@
                     sync: envelopeToSend.sync,
                     headers: this.getConfiguration().requestHeaders,
                     body: JSON.stringify(envelopeToSend.messages),
-                    onSuccess: function(responses) {
+                    onSuccess: function (responses) {
                         var success = false;
                         try {
                             var received = self.convertToMessages(responses);
@@ -829,14 +871,14 @@
                             }
                         }
                     },
-                    onError: function(reason, exception) {
+                    onError: function (reason, exception) {
                         var failure = {
                             reason: reason,
                             exception: exception
                         };
                         if (sameStack) {
                             // Keep the semantic of calling response callbacks asynchronously after the request
-                            self.setTimeout(function() {
+                            self.setTimeout(function () {
                                 self.transportFailure(envelopeToSend, request, failure);
                             }, 0);
                         } else {
@@ -847,7 +889,7 @@
                 sameStack = false;
             } catch (xx) {
                 // Keep the semantic of calling response callbacks asynchronously after the request
-                this.setTimeout(function() {
+                this.setTimeout(function () {
                     self.transportFailure(envelopeToSend, request, {
                         exception: xx
                     });
@@ -859,7 +901,8 @@
     };
 
 
-    var WebSocketTransport = function() {
+    //  websocket 
+    var WebSocketTransport = function () {
         var _super = new Transport();
         var _self = Transport.derive(_super);
         var _cometd;
@@ -875,7 +918,7 @@
         var _connected = false;
         var _successCallback = null;
 
-        _self.reset = function(init) {
+        _self.reset = function (init) {
             _super.reset(init);
             _webSocketSupported = true;
             if (init) {
@@ -887,6 +930,7 @@
             _connected = false;
         };
 
+        //
         function _forceClose(context, event) {
             if (context) {
                 this.webSocketClose(context, event.code, event.reason);
@@ -897,10 +941,12 @@
             }
         }
 
+        //
         function _sameContext(context) {
             return context === _connecting || context === _context;
         }
 
+        //
         function _storeEnvelope(context, envelope, metaConnect) {
             var messageIds = [];
             for (var i = 0; i < envelope.messages.length; ++i) {
@@ -913,6 +959,7 @@
             this._debug('Transport', this.getType(), 'stored envelope, envelopes', context.envelopes);
         }
 
+        //
         function _websocketConnect(context) {
             // We may have multiple attempts to open a WebSocket
             // connection, for example a /meta/connect request that
@@ -942,14 +989,14 @@
             var self = this;
             var connectTimeout = _cometd.getConfiguration().connectTimeout;
             if (connectTimeout > 0) {
-                context.connectTimer = this.setTimeout(function() {
+                context.connectTimer = this.setTimeout(function () {
                     _cometd._debug('Transport', self.getType(), 'timed out while connecting to URL', url, ':', connectTimeout, 'ms');
                     // The connection was not opened, close anyway.
                     _forceClose.call(self, context, {code: 1000, reason: 'Connect Timeout'});
                 }, connectTimeout);
             }
 
-            var onopen = function() {
+            var onopen = function () {
                 _cometd._debug('WebSocket onopen', context);
                 if (context.connectTimer) {
                     self.clearTimeout(context.connectTimer);
@@ -971,7 +1018,7 @@
             // The close frame for a connection may arrive *after* another
             // connection has been opened, so we must make sure that actions
             // are performed only if it's the same connection.
-            var onclose = function(event) {
+            var onclose = function (event) {
                 event = event || {code: 1000};
                 _cometd._debug('WebSocket onclose', context, event, 'connecting', _connecting, 'current', _context);
 
@@ -982,14 +1029,14 @@
                 self.onClose(context, event);
             };
 
-            var onmessage = function(wsMessage) {
+            var onmessage = function (wsMessage) {
                 _cometd._debug('WebSocket onmessage', wsMessage, context);
                 self.onMessage(context, wsMessage);
             };
 
             context.webSocket.onopen = onopen;
             context.webSocket.onclose = onclose;
-            context.webSocket.onerror = function() {
+            context.webSocket.onerror = function () {
                 // Clients should call onclose(), but if they do not we do it here for safety.
                 onclose({code: 1000, reason: 'Error'});
             };
@@ -998,6 +1045,7 @@
             this._debug('Transport', this.getType(), 'configured callbacks on', context);
         }
 
+        //
         function _webSocketSend(context, envelope, metaConnect) {
             var json = JSON.stringify(envelope.messages);
             context.webSocket.send(json);
@@ -1014,11 +1062,11 @@
             var self = this;
             var messageIds = [];
             for (var i = 0; i < envelope.messages.length; ++i) {
-                (function() {
+                (function () {
                     var message = envelope.messages[i];
                     if (message.id) {
                         messageIds.push(message.id);
-                        context.timeouts[message.id] = self.setTimeout(function() {
+                        context.timeouts[message.id] = self.setTimeout(function () {
                             _cometd._debug('Transport', self.getType(), 'timing out message', message.id, 'after', delay, 'on', context);
                             _forceClose.call(self, context, {code: 1000, reason: 'Message Timeout'});
                         }, delay);
@@ -1029,14 +1077,17 @@
             this._debug('Transport', this.getType(), 'waiting at most', delay, 'ms for messages', messageIds, 'maxNetworkDelay', maxDelay, ', timeouts:', context.timeouts);
         }
 
-        _self._notifySuccess = function(fn, messages) {
+        //
+        _self._notifySuccess = function (fn, messages) {
             fn.call(this, messages);
         };
 
-        _self._notifyFailure = function(fn, context, messages, failure) {
+        //
+        _self._notifyFailure = function (fn, context, messages, failure) {
             fn.call(this, context, messages, failure);
         };
 
+        //
         function _send(context, envelope, metaConnect) {
             try {
                 if (context === null) {
@@ -1053,7 +1104,7 @@
             } catch (x) {
                 // Keep the semantic of calling response callbacks asynchronously after the request.
                 var self = this;
-                this.setTimeout(function() {
+                this.setTimeout(function () {
                     _forceClose.call(self, context, {
                         code: 1000,
                         reason: 'Exception',
@@ -1063,7 +1114,8 @@
             }
         }
 
-        _self.onOpen = function(context) {
+        //
+        _self.onOpen = function (context) {
             var envelopes = context.envelopes;
             this._debug('Transport', this.getType(), 'opened', context, 'pending messages', envelopes);
             for (var key in envelopes) {
@@ -1079,7 +1131,7 @@
             }
         };
 
-        _self.onMessage = function(context, wsMessage) {
+        _self.onMessage = function (context, wsMessage) {
             this._debug('Transport', this.getType(), 'received websocket message', wsMessage, context);
 
             var close = false;
@@ -1146,7 +1198,7 @@
             }
         };
 
-        _self.onClose = function(context, event) {
+        _self.onClose = function (context, event) {
             this._debug('Transport', this.getType(), 'closed', context, event);
 
             if (_sameContext(context)) {
@@ -1187,23 +1239,23 @@
             }
         };
 
-        _self.registered = function(type, cometd) {
+        _self.registered = function (type, cometd) {
             _super.registered(type, cometd);
             _cometd = cometd;
         };
 
-        _self.accept = function(version, crossDomain, url) {
+        _self.accept = function (version, crossDomain, url) {
             this._debug('Transport', this.getType(), 'accept, supported:', _webSocketSupported);
             // Using !! to return a boolean (and not the WebSocket object).
             return _webSocketSupported && !!window.WebSocket && _cometd.websocketEnabled !== false;
         };
 
-        _self.send = function(envelope, metaConnect) {
+        _self.send = function (envelope, metaConnect) {
             this._debug('Transport', this.getType(), 'sending', envelope, '/meta/connect =', metaConnect);
             _send.call(this, _context, envelope, metaConnect);
         };
 
-        _self.webSocketClose = function(context, code, reason) {
+        _self.webSocketClose = function (context, code, reason) {
             try {
                 if (context.webSocket) {
                     context.webSocket.close(code, reason);
@@ -1213,7 +1265,7 @@
             }
         };
 
-        _self.abort = function() {
+        _self.abort = function () {
             _super.abort();
             _forceClose.call(this, _context, {code: 1000, reason: 'Abort'});
             this.reset(true);
@@ -1228,13 +1280,14 @@
      * The default name is the string 'default'.
      * @param name the optional name of this cometd object
      */
-    var CometD = function(name) {
+    var CometD = function (name) {
+        //
         var _scheduler = new Scheduler();
         var _cometd = this;
         var _name = name || 'default';
         var _crossDomain = false;
         var _transports = new TransportRegistry();
-        var _transport;
+        var _transport;  //
         var _status = 'disconnected';
         var _messageId = 0;
         var _clientId = null;
@@ -1256,6 +1309,7 @@
         var _unconnectTime = 0;
         var _handshakeMessages = 0;
         var _metaConnect = null;
+
         var _config = {
             useWorkerScheduler: true,
             protocol: null,
@@ -1279,6 +1333,7 @@
             }
         };
 
+        //
         function _fieldValue(object, name) {
             try {
                 return object[name];
@@ -1293,7 +1348,7 @@
          * @param target the target object
          * @param objects the objects whose properties are copied into the target
          */
-        this._mixin = function(deep, target, objects) {
+        this._mixin = function (deep, target, objects) {
             var result = target || {};
 
             // Skip first 2 parameters (deep and target), and loop over the others
@@ -1370,17 +1425,17 @@
             }
         }
 
-        this._warn = function() {
+        this._warn = function () {
             _log('warn', arguments);
         };
 
-        this._info = function() {
+        this._info = function () {
             if (_config.logLevel !== 'warn') {
                 _log('info', arguments);
             }
         };
 
-        this._debug = function() {
+        this._debug = function () {
             if (_config.logLevel === 'debug') {
                 _log('debug', arguments);
             }
@@ -1408,7 +1463,7 @@
          * @param hostAndPort the host and port in format host:port
          * @return whether the given hostAndPort is cross domain
          */
-        this._isCrossDomain = function(hostAndPort) {
+        this._isCrossDomain = function (hostAndPort) {
             if (window.location && window.location.host) {
                 if (hostAndPort) {
                     return hostAndPort !== window.location.host;
@@ -1473,7 +1528,7 @@
                 var blobURL = window.URL.createObjectURL(blob);
                 var worker = new window.Worker(blobURL);
                 window.URL.revokeObjectURL(blobURL);
-                _scheduler.setTimeout = function(funktion, delay) {
+                _scheduler.setTimeout = function (funktion, delay) {
                     var id = _scheduler.register(funktion);
                     worker.postMessage({
                         id: id,
@@ -1482,14 +1537,14 @@
                     });
                     return id;
                 };
-                _scheduler.clearTimeout = function(id) {
+                _scheduler.clearTimeout = function (id) {
                     _scheduler.unregister(id);
                     worker.postMessage({
                         id: id,
                         type: 'clearTimeout'
                     });
                 };
-                worker.onmessage = function(e) {
+                worker.onmessage = function (e) {
                     var id = e.data.id;
                     var funktion = _scheduler.unregister(id);
                     if (funktion) {
@@ -1717,14 +1772,14 @@
                 url: url,
                 sync: false,
                 messages: messages,
-                onSuccess: function(rcvdMessages) {
+                onSuccess: function (rcvdMessages) {
                     try {
                         _handleMessages.call(_cometd, rcvdMessages);
                     } catch (x) {
                         _cometd._info('Exception during handling of messages', x);
                     }
                 },
-                onFailure: function(conduit, messages, failure) {
+                onFailure: function (conduit, messages, failure) {
                     try {
                         var transport = _cometd.getTransport();
                         failure.connectionType = transport ? transport.getType() : "unknown";
@@ -1831,7 +1886,7 @@
 
         function _delayedConnect(delay) {
             _setStatus('connecting');
-            _delayedSend(function() {
+            _delayedSend(function () {
                 _connect();
             }, delay);
         }
@@ -1969,7 +2024,7 @@
             // call publish() (or other methods that call _queueSend()).
             _internalBatch = true;
 
-            _delayedSend(function() {
+            _delayedSend(function () {
                 _handshake(_handshakeProps, _handshakeCallback);
             }, delay);
         }
@@ -1992,11 +2047,11 @@
             }
         }
 
-        this._getCallback = function(messageId) {
+        this._getCallback = function (messageId) {
             return _callbacks[messageId];
         };
 
-        this._putCallback = function(messageId, callback) {
+        this._putCallback = function (messageId, callback) {
             var result = this._getCallback(messageId);
             if (_isFunction(callback)) {
                 _callbacks[messageId] = callback;
@@ -2033,7 +2088,7 @@
             return false;
         }
 
-        this.onTransportFailure = function(message, failureInfo, failureHandler) {
+        this.onTransportFailure = function (message, failureInfo, failureHandler) {
             this._debug('Transport failure', failureInfo, 'for', message);
 
             var transports = this.getTransportRegistry();
@@ -2438,7 +2493,7 @@
          */
         this.receive = _receive;
 
-        _handleMessages = function(rcvdMessages) {
+        _handleMessages = function (rcvdMessages) {
             _cometd._debug('Received', rcvdMessages);
 
             for (var i = 0; i < rcvdMessages.length; ++i) {
@@ -2447,7 +2502,7 @@
             }
         };
 
-        _handleFailure = function(conduit, messages, failure) {
+        _handleFailure = function (conduit, messages, failure) {
             _cometd._debug('handleFailure', conduit, messages, failure);
 
             failure.transport = conduit;
@@ -2568,7 +2623,7 @@
          * @return true if the transport has been registered, false otherwise
          * @see #unregisterTransport(type)
          */
-        this.registerTransport = function(type, transport, index) {
+        this.registerTransport = function (type, transport, index) {
             var result = _transports.add(type, transport, index);
             if (result) {
                 this._debug('Registered transport', type);
@@ -2586,7 +2641,7 @@
          * @return the transport that has been unregistered,
          * or null if no transport was previously registered under the given transport type
          */
-        this.unregisterTransport = function(type) {
+        this.unregisterTransport = function (type) {
             var transport = _transports.remove(type);
             if (transport !== null) {
                 this._debug('Unregistered transport', type);
@@ -2598,25 +2653,25 @@
             return transport;
         };
 
-        this.unregisterTransports = function() {
+        this.unregisterTransports = function () {
             _transports.clear();
         };
 
         /**
          * @return an array of all registered transport types
          */
-        this.getTransportTypes = function() {
+        this.getTransportTypes = function () {
             return _transports.getTransportTypes();
         };
 
-        this.findTransport = function(name) {
+        this.findTransport = function (name) {
             return _transports.find(name);
         };
 
         /**
          * @returns the TransportRegistry object
          */
-        this.getTransportRegistry = function() {
+        this.getTransportRegistry = function () {
             return _transports;
         };
 
@@ -2626,7 +2681,7 @@
          * of type string containing the URL of the Bayeux server.
          * @param configuration the configuration object
          */
-        this.configure = function(configuration) {
+        this.configure = function (configuration) {
             _configure.call(this, configuration);
         };
 
@@ -2638,7 +2693,7 @@
          * @see #configure(configuration)
          * @see #handshake(handshakeProps)
          */
-        this.init = function(configuration, handshakeProps) {
+        this.init = function (configuration, handshakeProps) {
             this.configure(configuration);
             this.handshake(handshakeProps);
         };
@@ -2649,7 +2704,7 @@
          * @param handshakeProps an object to be merged with the handshake message
          * @param handshakeCallback a function to be invoked when the handshake is acknowledged
          */
-        this.handshake = function(handshakeProps, handshakeCallback) {
+        this.handshake = function (handshakeProps, handshakeCallback) {
             if (_status !== 'disconnected') {
                 throw 'Illegal state: handshaken';
             }
@@ -2661,7 +2716,7 @@
          * @param disconnectProps an object to be merged with the disconnect message
          * @param disconnectCallback a function to be invoked when the disconnect is acknowledged
          */
-        this.disconnect = function(disconnectProps, disconnectCallback) {
+        this.disconnect = function (disconnectProps, disconnectCallback) {
             if (_isDisconnected()) {
                 return;
             }
@@ -2694,7 +2749,7 @@
          * calls must be made to close and send the batch of messages.
          * @see #endBatch()
          */
-        this.startBatch = function() {
+        this.startBatch = function () {
             _startBatch();
         };
 
@@ -2703,7 +2758,7 @@
          * in a single request.
          * @see #startBatch()
          */
-        this.endBatch = function() {
+        this.endBatch = function () {
             _endBatch();
         };
 
@@ -2713,7 +2768,7 @@
          * @param scope the scope of the callback, may be omitted
          * @param callback the callback to be executed within {@link #startBatch()} and {@link #endBatch()} calls
          */
-        this.batch = function(scope, callback) {
+        this.batch = function (scope, callback) {
             var delegate = _resolveScopedCallback(scope, callback);
             this.startBatch();
             try {
@@ -2735,7 +2790,7 @@
          * @returns the subscription handle to be passed to {@link #removeListener(object)}
          * @see #removeListener(subscription)
          */
-        this.addListener = function(channel, scope, callback) {
+        this.addListener = function (channel, scope, callback) {
             if (arguments.length < 2) {
                 throw 'Illegal arguments number: required 2, got ' + arguments.length;
             }
@@ -2751,7 +2806,7 @@
          * @param subscription the subscription to unsubscribe.
          * @see #addListener(channel, scope, callback)
          */
-        this.removeListener = function(subscription) {
+        this.removeListener = function (subscription) {
             // Beware of subscription.id == 0, which is falsy => cannot use !subscription.id
             if (!subscription || !subscription.channel || !("id" in subscription)) {
                 throw 'Invalid argument: expected subscription, not ' + subscription;
@@ -2764,7 +2819,7 @@
          * Removes all listeners registered with {@link #addListener(channel, scope, callback)} or
          * {@link #subscribe(channel, scope, callback)}.
          */
-        this.clearListeners = function() {
+        this.clearListeners = function () {
             _listeners = {};
         };
 
@@ -2778,7 +2833,7 @@
          * @param subscribeCallback a function to be invoked when the subscription is acknowledged
          * @return the subscription handle to be passed to {@link #unsubscribe(object)}
          */
-        this.subscribe = function(channel, scope, callback, subscribeProps, subscribeCallback) {
+        this.subscribe = function (channel, scope, callback, subscribeProps, subscribeCallback) {
             if (arguments.length < 2) {
                 throw 'Illegal arguments number: required 2, got ' + arguments.length;
             }
@@ -2833,7 +2888,7 @@
          * @param unsubscribeProps an object to be merged with the unsubscribe message
          * @param unsubscribeCallback a function to be invoked when the unsubscription is acknowledged
          */
-        this.unsubscribe = function(subscription, unsubscribeProps, unsubscribeCallback) {
+        this.unsubscribe = function (subscription, unsubscribeProps, unsubscribeCallback) {
             if (arguments.length < 1) {
                 throw 'Illegal arguments number: required 1, got ' + arguments.length;
             }
@@ -2868,7 +2923,7 @@
             }
         };
 
-        this.resubscribe = function(subscription, subscribeProps) {
+        this.resubscribe = function (subscription, subscribeProps) {
             _removeSubscription(subscription);
             if (subscription) {
                 return this.subscribe(subscription.channel, subscription.scope, subscription.callback, subscribeProps);
@@ -2880,7 +2935,7 @@
          * Removes all subscriptions added via {@link #subscribe(channel, scope, callback, subscribeProps)},
          * but does not remove the listeners added via {@link addListener(channel, scope, callback)}.
          */
-        this.clearSubscriptions = function() {
+        this.clearSubscriptions = function () {
             _clearSubscriptions();
         };
 
@@ -2891,7 +2946,7 @@
          * @param publishProps an object to be merged with the publish message
          * @param publishCallback a function to be invoked when the publish is acknowledged by the server
          */
-        this.publish = function(channel, content, publishProps, publishCallback) {
+        this.publish = function (channel, content, publishProps, publishCallback) {
             if (arguments.length < 1) {
                 throw 'Illegal arguments number: required 1, got ' + arguments.length;
             }
@@ -2940,7 +2995,7 @@
          * @param meta an object containing meta data associated to the binary chunk
          * @param callback a function to be invoked when the publish is acknowledged by the server
          */
-        this.publishBinary = function(channel, data, last, meta, callback) {
+        this.publishBinary = function (channel, data, last, meta, callback) {
             if (_isFunction(data)) {
                 callback = data;
                 data = new ArrayBuffer(0);
@@ -2967,7 +3022,7 @@
             this.publish(channel, content, ext, callback);
         };
 
-        this.remoteCall = function(target, content, timeout, callProps, callback) {
+        this.remoteCall = function (target, content, timeout, callProps, callback) {
             if (arguments.length < 1) {
                 throw 'Illegal arguments number: required 1, got ' + arguments.length;
             }
@@ -3012,7 +3067,7 @@
                 callback: callback
             };
             if (timeout > 0) {
-                context.timeout = _cometd.setTimeout(function() {
+                context.timeout = _cometd.setTimeout(function () {
                     _cometd._debug('Timing out remote call', message, 'after', timeout, 'ms');
                     _failMessage({
                         id: message.id,
@@ -3031,7 +3086,7 @@
             _queueSend(message);
         };
 
-        this.remoteCallBinary = function(target, data, last, meta, timeout, callback) {
+        this.remoteCallBinary = function (target, data, last, meta, timeout, callback) {
             if (_isFunction(data)) {
                 callback = data;
                 data = new ArrayBuffer(0);
@@ -3069,7 +3124,7 @@
         /**
          * Returns a string representing the status of the bayeux communication with the Bayeux server.
          */
-        this.getStatus = function() {
+        this.getStatus = function () {
             return _status;
         };
 
@@ -3086,7 +3141,7 @@
          * @param period the backoff period to set
          * @see #getBackoffIncrement()
          */
-        this.setBackoffIncrement = function(period) {
+        this.setBackoffIncrement = function (period) {
             _config.backoffIncrement = period;
         };
 
@@ -3094,14 +3149,14 @@
          * Returns the backoff period used to increase the backoff time when retrying an unsuccessful or failed message.
          * @see #setBackoffIncrement(period)
          */
-        this.getBackoffIncrement = function() {
+        this.getBackoffIncrement = function () {
             return _config.backoffIncrement;
         };
 
         /**
          * Returns the backoff period to wait before retrying an unsuccessful or failed message.
          */
-        this.getBackoffPeriod = function() {
+        this.getBackoffPeriod = function () {
             return _backoff;
         };
 
@@ -3110,14 +3165,14 @@
          * @returns the backoff period after increment
          * @see getBackoffIncrement
          */
-        this.increaseBackoffPeriod = function() {
+        this.increaseBackoffPeriod = function () {
             return _increaseBackoff();
         };
 
         /**
          * Resets the backoff period to zero.
          */
-        this.resetBackoffPeriod = function() {
+        this.resetBackoffPeriod = function () {
             _resetBackoff();
         };
 
@@ -3127,7 +3182,7 @@
          * less verbose to more verbose.
          * @param level the log level string
          */
-        this.setLogLevel = function(level) {
+        this.setLogLevel = function (level) {
             _config.logLevel = level;
         };
 
@@ -3150,7 +3205,7 @@
          * @return true if the extension was registered, false otherwise
          * @see #unregisterExtension(name)
          */
-        this.registerExtension = function(name, extension) {
+        this.registerExtension = function (name, extension) {
             if (arguments.length < 2) {
                 throw 'Illegal arguments number: required 2, got ' + arguments.length;
             }
@@ -3191,7 +3246,7 @@
          * @param name the name of the extension to unregister.
          * @return true if the extension was unregistered, false otherwise
          */
-        this.unregisterExtension = function(name) {
+        this.unregisterExtension = function (name) {
             if (!_isString(name)) {
                 throw 'Illegal argument type: extension name must be a string';
             }
@@ -3221,7 +3276,7 @@
          * @param name the name of the extension to find
          * @return the extension found or null if no extension with the given name has been registered
          */
-        this.getExtension = function(name) {
+        this.getExtension = function (name) {
             for (var i = 0; i < _extensions.length; ++i) {
                 var extension = _extensions[i];
                 if (extension.name === name) {
@@ -3235,21 +3290,21 @@
          * Returns the name assigned to this CometD object, or the string 'default'
          * if no name has been explicitly passed as parameter to the constructor.
          */
-        this.getName = function() {
+        this.getName = function () {
             return _name;
         };
 
         /**
          * Returns the clientId assigned by the Bayeux server during handshake.
          */
-        this.getClientId = function() {
+        this.getClientId = function () {
             return _clientId;
         };
 
         /**
          * Returns the URL of the Bayeux server.
          */
-        this.getURL = function() {
+        this.getURL = function () {
             if (_transport) {
                 var url = _transport.getURL();
                 if (url) {
@@ -3263,20 +3318,20 @@
             return _config.url;
         };
 
-        this.getTransport = function() {
+        this.getTransport = function () {
             return _transport;
         };
 
-        this.getConfiguration = function() {
+        this.getConfiguration = function () {
             return this._mixin(true, {}, _config);
         };
 
-        this.getAdvice = function() {
+        this.getAdvice = function () {
             return this._mixin(true, {}, _advice);
         };
 
-        this.setTimeout = function(funktion, delay) {
-            return _scheduler.setTimeout(function() {
+        this.setTimeout = function (funktion, delay) {
+            return _scheduler.setTimeout(function () {
                 try {
                     _cometd._debug('Invoking timed function', funktion);
                     funktion();
@@ -3286,7 +3341,7 @@
             }, delay);
         };
 
-        this.clearTimeout = function(id) {
+        this.clearTimeout = function (id) {
             _scheduler.clearTimeout(id);
         };
 
@@ -3324,7 +3379,7 @@
         0x21, 0x22, 0x23, 0x4F, 0x00, 0x50, 0x00, 0x00
     ];
     var Z85 = {
-        encode: function(bytes) {
+        encode: function (bytes) {
             var buffer = null;
             if (bytes instanceof ArrayBuffer) {
                 buffer = bytes;
@@ -3361,7 +3416,7 @@
 
             return result;
         },
-        decode: function(string) {
+        decode: function (string) {
             var remainder = string.length % 5;
             var padding = 5 - (remainder === 0 ? 5 : remainder);
             for (var p = 0; p < padding; ++p) {

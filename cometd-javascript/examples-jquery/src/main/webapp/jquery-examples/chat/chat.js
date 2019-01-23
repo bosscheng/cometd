@@ -200,6 +200,7 @@
             });
         }
 
+        //
         function _connectionBroken() {
             _self.receive({
                 data: {
@@ -210,6 +211,7 @@
             $('#members').empty();
         }
 
+        //
         function _connectionClosed() {
             _self.receive({
                 data: {
@@ -260,6 +262,7 @@
                     useServer: $('#useServer').prop('checked'),
                     altServer: $('#altServer').val()
                 }));
+                // getTransport
                 $.cometd.getTransport().abort();
             } else {
                 $.cometd.disconnect();
